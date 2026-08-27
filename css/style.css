@@ -216,6 +216,18 @@ td{padding:11px 12px;border-bottom:1px solid var(--border);vertical-align:middle
 tr:last-child td{border-bottom:none;}
 tbody tr:hover{background:var(--surface-2);}
 .table-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:var(--radius);}
+.table-scroll{max-height:480px;overflow-y:auto;}
+.table-scroll thead th{position:sticky;top:0;background:var(--surface);z-index:1;}
+
+.gw-nav{display:flex;align-items:center;justify-content:center;gap:18px;margin-bottom:18px;}
+.gw-arrow{
+  width:34px;height:34px;border-radius:9px;border:1px solid var(--border);background:var(--surface);
+  color:var(--text);font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  transition:border-color .15s ease,opacity .15s ease;
+}
+.gw-arrow:hover:not(:disabled){border-color:var(--accent);}
+.gw-arrow:disabled{opacity:.3;cursor:default;}
+.gw-label{font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:15px;min-width:110px;text-align:center;}
 .table-wrap table{min-width:600px;}
 
 .player-cell{display:flex;align-items:center;gap:10px;}
@@ -260,6 +272,7 @@ tbody tr:hover{background:var(--surface-2);}
 .stat-tile .l{font-size:12px;color:var(--text-dim);margin-top:2px;}
 
 .matches-wrap{max-width:640px;margin:0 auto;display:flex;flex-direction:column;gap:10px;}
+.matches-scroll{max-height:520px;overflow-y:auto;padding-right:4px;}
 .match-card{
   background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
   padding:14px 20px;display:flex;align-items:center;justify-content:space-between;gap:14px;
@@ -270,6 +283,9 @@ tbody tr:hover{background:var(--surface-2);}
 .match-team img{width:22px;height:22px;object-fit:contain;flex-shrink:0;}
 .match-team span{font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .match-team.away{flex-direction:row-reverse;text-align:right;}
+.team-link{text-decoration:none;color:inherit;display:flex;flex:1;min-width:0;border-radius:8px;transition:background .12s ease;}
+.team-link:hover{background:var(--surface-2);}
+.team-link .match-team{flex:1;}
 .match-score-wrap{display:flex;flex-direction:column;align-items:center;gap:3px;flex-shrink:0;min-width:64px;}
 .match-score{font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:17px;white-space:nowrap;letter-spacing:.02em;}
 .match-status{font-size:9.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);font-weight:700;display:flex;align-items:center;gap:4px;}

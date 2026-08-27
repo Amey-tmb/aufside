@@ -14,6 +14,7 @@ import { FixturesView } from './views/fixtures.js';
 import { LiveView } from './views/live.js';
 import { MiniLeagueView } from './views/mini-league.js';
 import { DeadlinesView } from './views/deadlines.js';
+import { TeamView } from './views/team.js';
 
 /* ------------------------------- Root render ------------------------------- */
 export function renderRoot(html){
@@ -43,6 +44,7 @@ export async function render(){
     case '/mini-league': return MiniLeagueView();
     case '/deadlines': return DeadlinesView();
     default:
+      if(path.startsWith('/team/')) return TeamView(path.slice('/team/'.length));
       renderRoot(`<div class="page"><div class="empty-box">Page not found. <a href="#/" style="color:var(--accent);">Go home</a></div></div>`);
   }
 }

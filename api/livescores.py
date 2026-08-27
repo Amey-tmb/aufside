@@ -2,18 +2,24 @@ import json
 import os
 import urllib.request
 import urllib.error
-from datetime import date, timedelta
+import urllib.parse
 from http.server import BaseHTTPRequestHandler
 
-# Fetches Premier League standings + recent/upcoming matches from
-# football-data.org, using an API key stored as a Vercel environment
-# variable (never exposed to the browser). This replaces ESPN's
-# undocumented API, which frequently blocks requests coming from
-# server/datacenter IPs like Vercel's.
+# Fetches Premier League standings + matches for a given gameweek (matchday)
+# from football-data.org, using an API key stored as a Vercel environment
+# variable (never exposed to the browser).
 #
 # Requires an environment variable FOOTBALL_DATA_API_KEY to be set in
 # your Vercel project (Settings -> Environment Variables). Get a free
 # key at https://www.football-data.org/client/register
+#
+# Query params:
+#   ?matchday=N   optional. Defaults to the Premier League's current matchday.
+
+# The Premier League is a fixed 20-club league, so it always plays exactly
+# 38 matchdays a season. Used to clamp/bound the gameweek prev/next arrows
+# on the frontend without an extra API call.
+TOTAL_MATCHDAYS = 38
 
 # Maps football-data.org's raw match status to an ESPN-like {state, description}
 # pair, since the frontend's "live" pulse indicator checks state === 'in'.
@@ -43,13 +49,23 @@ class handler(BaseHTTPRequestHandler):
             return
 
         headers = {'X-Auth-Token': api_key}
-        today = date.today()
-        date_from = (today - timedelta(days=3)).isoformat()
-        date_to = (today + timedelta(days=3)).isoformat()
+        query = urllib.parse.urlparse(self.path).query
+        params = urllib.parse.parse_qs(query)
+        requested_matchday = (params.get('matchday') or [None])[0]
 
         try:
+            matchday = int(requested_matchday) if requested_matchday else None
+        except ValueError:
+            matchday = None
+
+        try:
+            if matchday is None:
+                comp = _fetch_json('https://api.football-data.org/v4/competitions/PL', headers)
+                matchday = comp.get('currentSeason', {}).get('currentMatchday') or 1
+            matchday = max(1, min(TOTAL_MATCHDAYS, matchday))
+
             matches_data = _fetch_json(
-                f'https://api.football-data.org/v4/competitions/PL/matches?dateFrom={date_from}&dateTo={date_to}',
+                f'https://api.football-data.org/v4/competitions/PL/matches?matchday={matchday}',
                 headers,
             )
             standings_data = _fetch_json(
@@ -72,11 +88,11 @@ class handler(BaseHTTPRequestHandler):
                 'competitions': [{
                     'competitors': [
                         {
-                            'team': {'shortDisplayName': home.get('shortName') or home.get('name'), 'logo': home.get('crest')},
+                            'team': {'id': home.get('id'), 'shortDisplayName': home.get('shortName') or home.get('name'), 'logo': home.get('crest')},
                             'score': score.get('home') if score.get('home') is not None else '-',
                         },
                         {
-                            'team': {'shortDisplayName': away.get('shortName') or away.get('name'), 'logo': away.get('crest')},
+                            'team': {'id': away.get('id'), 'shortDisplayName': away.get('shortName') or away.get('name'), 'logo': away.get('crest')},
                             'score': score.get('away') if score.get('away') is not None else '-',
                         },
                     ],
@@ -89,7 +105,7 @@ class handler(BaseHTTPRequestHandler):
         for row in table:
             team = row.get('team', {})
             entries.append({
-                'team': {'shortDisplayName': team.get('shortName') or team.get('name'), 'logos': [{'href': team.get('crest')}]},
+                'team': {'id': team.get('id'), 'shortDisplayName': team.get('shortName') or team.get('name'), 'logos': [{'href': team.get('crest')}]},
                 'stats': [
                     {'name': 'gamesPlayed', 'value': row.get('playedGames')},
                     {'name': 'wins', 'value': row.get('won')},
@@ -101,7 +117,7 @@ class handler(BaseHTTPRequestHandler):
             })
 
         self._send_json(200, {
-            'scoreboard': {'events': events},
+            'scoreboard': {'events': events, 'matchday': matchday, 'totalMatchdays': TOTAL_MATCHDAYS},
             'standings': {'standings': [{'entries': entries}]},
         }, cache=True)
 
