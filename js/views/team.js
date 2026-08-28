@@ -69,7 +69,7 @@ function renderTeamBody(data){
   const squadHtml = squad.length===0 ? `<div class="empty-box">Squad data unavailable for this club right now.</div>` : bySection.map(g=>`
     <div class="section-label">${g.label}</div>
     <div class="table-wrap" style="margin-bottom:16px;">
-      <table>
+      <table class="squad-table">
         <thead><tr><th>#</th><th>Player</th><th>Nationality</th><th>Age</th></tr></thead>
         <tbody>
           ${g.players.map(p=>`<tr>
