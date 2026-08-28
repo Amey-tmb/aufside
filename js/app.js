@@ -12,6 +12,7 @@ import { InjuriesView } from './views/injuries.js';
 import { TransferNewsView } from './views/transfer-news.js';
 import { PlayersView } from './views/players.js';
 import { FixturesView } from './views/fixtures.js';
+import { CalendarView } from './views/calendar.js';
 import { LiveView } from './views/live.js';
 import { MiniLeagueView } from './views/mini-league.js';
 import { DeadlinesView } from './views/deadlines.js';
@@ -41,6 +42,7 @@ export async function render(){
     case '/transfer-news': return TransferNewsView();
     case '/players': return PlayersView();
     case '/fixtures': return FixturesView();
+    case '/calendar': return CalendarView();
     case '/live': return LiveView();
     case '/mini-league': return MiniLeagueView();
     case '/deadlines': return DeadlinesView();
