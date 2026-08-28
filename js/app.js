@@ -2,6 +2,7 @@ import { state } from './state.js';
 import { loadSavedTeamId, loadSavedLeagueId } from './storage.js';
 import { currentPath } from './router.js';
 import { applyTheme, wireThemeToggle } from './theme.js';
+import { loadSavedAccent, wireAccentPicker } from './accent.js';
 import { wireInstallPrompt } from './install.js';
 import { buildNavMenu, wireNavTrigger } from './nav.js';
 import { ensureBootstrap } from './api.js';
@@ -59,6 +60,7 @@ function wireGlobalNav(){
   wireThemeToggle();
   wireNavTrigger();
   wireInstallPrompt();
+  wireAccentPicker();
 }
 
 (async function boot(){
@@ -68,6 +70,7 @@ function wireGlobalNav(){
     if(t && t.value) state.theme = t.value;
   }catch(e){}
   applyTheme();
+  await loadSavedAccent();
   await loadSavedTeamId();
   await loadSavedLeagueId();
   render();
