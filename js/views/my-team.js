@@ -1,478 +1,247 @@
-:root{
-  --bg:#0B0E11;
-  --surface:#12161C;
-  --surface-2:#1B2129;
-  --surface-3:#232A33;
-  --border:#232A33;
-  --text:#EDEFF2;
-  --text-dim:#8B93A1;
-  --accent:#DC052D;
-  --accent-dim:#DC052D22;
-  --accent2:#2D6CDF;
-  --accent2-dim:#2D6CDF22;
-  --bad:#FF4D4D;
-  --bad-dim:#FF4D4D22;
-  --warn:#FFB443;
-  --warn-dim:#FFB44322;
-  --shadow: 0 8px 24px rgba(0,0,0,0.35);
-  --radius:14px;
-}
-[data-theme="light"]{
-  --bg:#F7F5F5;
-  --surface:#FFFFFF;
-  --surface-2:#F1EEEE;
-  --surface-3:#E5E1E1;
-  --border:#DCD8D8;
-  --text:#161213;
-  --text-dim:#5B5457;
-  --accent:#C40027;
-  --accent-dim:#C4002722;
-  --accent2:#1B4FA6;
-  --accent2-dim:#1B4FA622;
-  --bad:#D93636;
-  --bad-dim:#D9363622;
-  --warn:#B9760E;
-  --warn-dim:#B9760E22;
-  --shadow: 0 8px 24px rgba(20,30,25,0.08);
-}
-*{box-sizing:border-box;}
-html,body{margin:0;padding:0;}
-body{
-  background:var(--bg);
-  color:var(--text);
-  font-family:'Inter',system-ui,sans-serif;
-  min-height:100vh;
-  transition:background .25s ease,color .25s ease;
-}
-.mono{font-family:'IBM Plex Mono',monospace; font-variant-numeric: tabular-nums;}
-.display{font-family:'Space Grotesk',sans-serif;}
-a{color:inherit;}
-::selection{background:var(--accent-dim);}
-button{font-family:inherit;cursor:pointer;}
-input,select{font-family:inherit;}
+import { state } from '../state.js';
+import { POS_SHORT } from '../constants.js';
+import { ensureBootstrap, loadPicksForTeam } from '../api.js';
+import { teamOf, crestUrl, kitUrl, priceFmt, statusBadge } from '../scoring.js';
+import { esc } from '../utils.js';
+import { skeletonCards } from '../skeletons.js';
+import { ToolShell, NeedTeamPrompt, wireInlineTeamForm } from '../tool-shell.js';
+import { renderRoot } from '../app.js';
 
-/* ---------- Top bar ---------- */
-.topbar{
-  position:sticky;top:0;z-index:50;
-  display:flex;align-items:center;justify-content:space-between;
-  padding:14px 28px;
-  background:color-mix(in srgb, var(--bg) 85%, transparent);
-  backdrop-filter:blur(10px);
-  border-bottom:1px solid var(--border);
-}
-.brand{display:flex;align-items:center;gap:10px;cursor:pointer;}
-.brand-mark{
-  width:28px;height:28px;border-radius:8px;
-  background:linear-gradient(135deg,var(--accent),#8C0021);
-  border:1.5px solid var(--accent2);
-  display:flex;align-items:center;justify-content:center;
-  font-family:'Space Grotesk',sans-serif;font-weight:700;color:#FFFFFF;font-size:14px;
-}
-.brand-name{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:17px;letter-spacing:-0.01em;}
-.topbar-right{display:flex;align-items:center;gap:10px;}
+const TITLE = 'My Team';
+const DESC = 'Your imported squad for this gameweek.';
 
-.icon-btn{
-  width:36px;height:36px;border-radius:10px;border:1px solid var(--border);
-  background:var(--surface);color:var(--text);
-  display:flex;align-items:center;justify-content:center;
-  transition:border-color .15s ease, transform .1s ease;
-}
-.icon-btn:hover{border-color:var(--accent);}
-.icon-btn:active{transform:scale(0.94);}
+// Remembers which view/metric the user last chose so it persists across
+// re-renders within the session (not just for this one call).
+let currentView = 'pitch'; // 'pitch' | 'list'
+let currentMetric = 'points'; // which stat is shown on each pitch chip
+let metricMenuOpen = false;
 
-.nav-wrap{position:relative;}
-.nav-trigger{
-  display:flex;align-items:center;gap:6px;
-  padding:8px 14px;border-radius:10px;border:1px solid var(--border);
-  background:var(--surface);color:var(--text);font-size:14px;font-weight:600;
-}
-.nav-trigger:hover{border-color:var(--accent);}
-.nav-menu{
-  position:absolute;right:0;top:calc(100% + 8px);
-  width:280px;background:var(--surface);border:1px solid var(--border);
-  border-radius:var(--radius);box-shadow:var(--shadow);
-  padding:8px;display:none;flex-direction:column;gap:2px;
-  max-height:80vh;overflow:auto;
-}
-.nav-menu.open{display:flex;}
-.nav-item{
-  display:flex;align-items:center;gap:12px;
-  padding:10px 12px;border-radius:9px;font-size:13.5px;font-weight:500;
-  color:var(--text);text-decoration:none;
-}
-.nav-item:hover{background:var(--surface-2);}
-.nav-item.active{background:var(--accent-dim);color:var(--accent);}
-.nav-item .ni-ico{width:18px;text-align:center;font-size:15px;opacity:.85;}
-.nav-item .ni-sub{display:block;font-size:11px;color:var(--text-dim);font-weight:400;margin-top:1px;}
-.nav-close{display:none;}
-.nav-backdrop{display:none;}
+const METRICS = [
+  { id:'points',        label:'Points' },
+  { id:'current_price',  label:'Current Price' },
+  { id:'selling_price',  label:'Selling Price' },
+  { id:'form',           label:'Form' },
+  { id:'ownership',      label:'Ownership' },
+  { id:'price_change',   label:'Price Change' },
+];
 
-/* ---------- Landing ---------- */
-.landing{
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  padding:36px 20px 20px;position:relative;overflow:hidden;
-}
-.landing-inner::after{
-  content:'';display:block;width:64px;height:3px;margin:18px auto 0;
-  background:linear-gradient(90deg,var(--accent),#fff,var(--accent2));
-  border-radius:2px;opacity:.85;
-}
-.home-section{max-width:1180px;margin:0 auto;padding:0 24px;}
-.home-section + .home-section{margin-top:28px;}
-.home-section:last-child{padding-bottom:70px;}
-.home-section > .section-label{text-align:center;}
-.pitch-lines{position:absolute;inset:0;pointer-events:none;opacity:.5;}
-.landing-inner{max-width:560px;width:100%;text-align:center;position:relative;z-index:1;}
-.eyebrow{
-  display:inline-flex;align-items:center;gap:6px;
-  font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);
-  background:var(--accent-dim);padding:6px 12px;border-radius:100px;margin-bottom:22px;font-weight:600;
-}
-.eyebrow-dot{width:6px;height:6px;border-radius:50%;background:var(--accent);animation:pulse 2s infinite;}
-@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.35;}}
-.landing h1{
-  font-family:'Space Grotesk',sans-serif;font-weight:700;
-  font-size:clamp(36px,6vw,54px);line-height:1.05;letter-spacing:-0.02em;margin:0 0 16px;
-}
-.landing h1 .hl{color:var(--accent);}
-.landing p.tagline{color:var(--text-dim);font-size:16px;line-height:1.6;margin:0 0 36px;}
-.team-form{
-  display:flex;gap:8px;background:var(--surface);border:1px solid var(--border);
-  padding:6px;border-radius:14px;box-shadow:var(--shadow);
-}
-.team-form input{
-  flex:1;background:transparent;border:none;outline:none;color:var(--text);
-  padding:12px 14px;font-size:15px;min-width:0;
-}
-.team-form input::placeholder{color:var(--text-dim);}
-.team-form button{
-  background:var(--accent);color:#FFFFFF;border:none;border-radius:9px;
-  padding:0 20px;font-weight:700;font-size:14px;white-space:nowrap;
-  transition:filter .15s ease;
-}
-.team-form button:hover{filter:brightness(1.08);}
-.team-form button:disabled{opacity:.5;cursor:default;}
-.form-hint{font-size:12.5px;color:var(--text-dim);margin-top:12px;}
-.form-hint b{color:var(--text);}
-.landing-quicklinks{
-  display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:34px;
-}
-.quick-chip{
-  font-size:12.5px;font-weight:600;padding:7px 13px;border-radius:100px;
-  border:1px solid var(--border);color:var(--text-dim);background:var(--surface);
-}
-.quick-chip:hover{color:var(--accent);border-color:var(--accent);}
-
-/* ---------- Page shell ---------- */
-.page{max-width:1180px;margin:0 auto;padding:32px 24px 80px;}
-.page-head{margin-bottom:26px;}
-.page-head h2{font-family:'Space Grotesk',sans-serif;font-size:26px;margin:0 0 6px;letter-spacing:-0.01em;}
-.page-head p{color:var(--text-dim);font-size:14px;margin:0;max-width:640px;line-height:1.55;}
-.back-link{
-  display:inline-flex;align-items:center;gap:6px;color:var(--text-dim);font-size:13px;
-  text-decoration:none;margin-bottom:18px;font-weight:600;
-}
-.back-link:hover{color:var(--accent);}
-
-/* ---------- Generic components ---------- */
-.card{
-  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
-  padding:18px;
-}
-.grid{display:grid;gap:14px;}
-.grid-3{grid-template-columns:repeat(3,1fr);}
-.grid-2{grid-template-columns:repeat(2,1fr);}
-@media(max-width:820px){.grid-3{grid-template-columns:1fr;}.grid-2{grid-template-columns:1fr;}}
-
-.badge{
-  display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;
-  padding:3px 9px;border-radius:100px;text-transform:uppercase;letter-spacing:.02em;
-}
-.badge-ok{color:var(--accent);background:var(--accent-dim);}
-.badge-bad{color:var(--bad);background:var(--bad-dim);}
-.badge-warn{color:var(--warn);background:var(--warn-dim);}
-.badge-mute{color:var(--text-dim);background:var(--surface-2);}
-
-.pos-pill{font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:5px;letter-spacing:.03em;}
-.pos-GKP{background:#FFB44322;color:#FFB443;}
-.pos-DEF{background:#00E28A22;color:#00E28A;}
-.pos-MID{background:#4DA6FF22;color:#4DA6FF;}
-.pos-FWD{background:#FF4D8022;color:#FF4D80;}
-
-.skel{
-  background:linear-gradient(90deg, var(--surface-2) 25%, var(--surface-3) 37%, var(--surface-2) 63%);
-  background-size:400% 100%;animation:skel-shimmer 1.4s ease infinite;border-radius:10px;
-}
-@keyframes skel-shimmer{0%{background-position:100% 0;}100%{background-position:0 0;}}
-.skel-wrap{display:flex;flex-direction:column;gap:10px;}
-.skel-row{height:56px;border-radius:var(--radius);}
-.skel-row.sm{height:38px;border-radius:9px;}
-.skel-row.thin{height:14px;border-radius:6px;}
-
-.err-box{
-  background:var(--surface);border:1px solid var(--border);color:var(--text-dim);
-  padding:16px 18px;border-radius:var(--radius);font-size:13.5px;line-height:1.55;
-  display:flex;gap:10px;align-items:flex-start;
-}
-.err-box::before{content:'!';flex-shrink:0;width:18px;height:18px;border-radius:50%;background:var(--bad-dim);color:var(--bad);font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;margin-top:1px;}
-.empty-box{padding:40px 20px;text-align:center;color:var(--text-dim);font-size:14px;}
-
-table{width:100%;border-collapse:collapse;font-size:13.5px;}
-th{
-  text-align:left;color:var(--text-dim);font-weight:600;font-size:11.5px;
-  text-transform:uppercase;letter-spacing:.03em;padding:10px 12px;border-bottom:1px solid var(--border);
-  white-space:nowrap;
-}
-td{padding:11px 12px;border-bottom:1px solid var(--border);vertical-align:middle;}
-tr:last-child td{border-bottom:none;}
-tbody tr:hover{background:var(--surface-2);}
-.table-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:var(--radius);background:color-mix(in srgb, var(--surface) 90%, #fff 6%);}
-.table-scroll{max-height:480px;overflow-y:auto;scrollbar-width:none;-ms-overflow-style:none;}
-.table-scroll::-webkit-scrollbar{width:0;height:0;display:none;}
-.table-scroll thead th{position:sticky;top:0;background:color-mix(in srgb, var(--surface) 90%, #fff 6%);z-index:1;}
-
-.gw-nav{display:flex;align-items:center;justify-content:center;gap:18px;margin-bottom:18px;}
-.gw-arrow{
-  width:34px;height:34px;border-radius:9px;border:1px solid var(--border);background:var(--surface);
-  color:var(--text);font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;
-  transition:border-color .15s ease,opacity .15s ease;
-}
-.gw-arrow:hover:not(:disabled){border-color:var(--accent2);}
-.gw-arrow:disabled{opacity:.3;cursor:default;}
-.gw-label{font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:15px;min-width:110px;text-align:center;}
-.table-wrap table{min-width:600px;}
-
-.roster-table{table-layout:fixed;}
-.roster-table th:nth-child(1),
-.roster-table td:nth-child(1){width:42%;}
-.roster-table th:nth-child(2),
-.roster-table td:nth-child(2){width:16%;}
-.roster-table th:nth-child(3),
-.roster-table td:nth-child(3){width:14%;}
-.roster-table th:nth-child(4),
-.roster-table td:nth-child(4){width:18%;}
-.roster-table th:nth-child(5),
-.roster-table td:nth-child(5){width:10%;}
-.roster-table td:nth-child(1) .player-cell{overflow:hidden;}
-.roster-table .pname,
-.roster-table .psub{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-
-.player-cell{display:flex;align-items:center;gap:10px;}
-.crest{width:20px;height:20px;object-fit:contain;}
-
-/* ---- View toggle (Pitch / List) ---- */
-.seg-toggle{
-  display:inline-flex;gap:2px;padding:3px;border-radius:10px;
-  background:var(--surface-2);border:1px solid var(--border);
-}
-.seg-btn{
-  border:none;background:transparent;color:var(--text-dim);font-size:13px;font-weight:600;
-  padding:7px 14px;border-radius:8px;cursor:pointer;transition:background .15s ease,color .15s ease;
-}
-.seg-btn.is-active{background:var(--accent);color:#fff;}
-.seg-btn:not(.is-active):hover{color:var(--text);}
-
-/* ---- Metric dropdown (Points / Price / Form / etc. on pitch chips) ---- */
-.metric-dropdown{position:relative;}
-.metric-dropdown-btn{
-  display:inline-flex;align-items:center;gap:8px;
-  background:var(--surface-2);border:1px solid var(--border);color:var(--text);
-  font-size:13px;font-weight:600;padding:8px 14px;border-radius:10px;cursor:pointer;
-  transition:border-color .15s ease;
-}
-.metric-dropdown-btn:hover{border-color:var(--accent2, var(--accent));}
-.metric-dropdown.is-open .metric-dropdown-btn{border-color:var(--accent2, var(--accent));}
-.metric-dropdown-ico{font-size:13px;}
-.metric-dropdown-caret{font-size:9px;color:var(--text-dim);margin-left:2px;}
-.metric-dropdown-menu{
-  position:absolute;top:calc(100% + 6px);left:0;min-width:190px;z-index:20;
-  background:var(--surface);border:1px solid var(--border);border-radius:10px;
-  box-shadow:var(--shadow, 0 8px 24px rgba(0,0,0,.35));overflow:hidden;padding:4px;
-}
-.metric-dropdown-item{
-  display:block;width:100%;text-align:left;background:transparent;border:none;
-  color:var(--text);font-size:13.5px;padding:9px 12px;border-radius:7px;cursor:pointer;
-}
-.metric-dropdown-item:hover{background:var(--surface-2);}
-.metric-dropdown-item.is-active{background:var(--accent-dim);color:var(--accent);font-weight:600;}
-
-/* ---- Pitch view ---- */
-.pitch-wrap{
-  border-radius:var(--radius);overflow:hidden;border:1px solid var(--border);
-}
-.pitch-field{
-  background:
-    repeating-linear-gradient(180deg, rgba(255,255,255,.05) 0 60px, rgba(255,255,255,0) 60px 120px),
-    linear-gradient(180deg, #1e8a4c, #14652f 60%, #0f4d24);
-  padding:44px 20px;display:flex;flex-direction:column;justify-content:space-around;gap:30px;min-height:560px;
-}
-.pitch-row{display:flex;justify-content:center;flex-wrap:wrap;gap:22px;}
-.pitch-chip{
-  position:relative;display:flex;flex-direction:column;align-items:center;width:100px;
-}
-.pitch-kit{
-  width:78px;height:78px;display:flex;align-items:center;justify-content:center;
-  filter:drop-shadow(0 4px 6px rgba(0,0,0,.4));
-}
-.pitch-kit img{width:100%;height:100%;object-fit:contain;}
-.pitch-kit img.is-crest-fallback{
-  width:52px;height:52px;border-radius:50%;background:#fff;padding:6px;
-}
-.pitch-name-tag{
-  margin-top:6px;background:#0d1117;color:#fff;font-size:13.5px;font-weight:700;
-  padding:5px 10px;border-radius:6px;white-space:nowrap;max-width:100px;overflow:hidden;
-  text-overflow:ellipsis;box-shadow:0 2px 4px rgba(0,0,0,.3);
-}
-.pitch-pts-tag{
-  margin-top:4px;background:var(--accent);color:#fff;font-size:13.5px;font-weight:800;
-  padding:3px 10px;border-radius:6px;
-}
-.pitch-pts-tag.is-up{background:#1f9d55;}
-.pitch-pts-tag.is-down{background:#c0392b;}
-.chip-role{
-  position:absolute;top:-6px;left:-4px;width:24px;height:24px;border-radius:50%;
-  font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;
-  color:#fff;z-index:2;box-shadow:0 1px 3px rgba(0,0,0,.4);
-}
-.chip-role-c{background:var(--bad,#c0392b);}
-.chip-role-vc{background:#555;}
-.chip-flag{
-  display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;
-  border-radius:50%;background:#f5b942;color:#111;font-size:10px;font-weight:800;
-}
-.pitch-bench{
-  display:flex;flex-wrap:wrap;justify-content:center;gap:22px;padding:22px;border:1px solid var(--border);
-  border-radius:var(--radius);background:color-mix(in srgb, var(--surface) 90%, #fff 6%);
-}
-@media(max-width:640px){
-  .pitch-field{padding:30px 10px;gap:22px;min-height:460px;}
-  .pitch-row{gap:14px;}
-  .pitch-chip{width:78px;}
-  .pitch-kit{width:58px;height:58px;}
-  .pitch-name-tag{font-size:11.5px;max-width:78px;padding:4px 8px;}
-  .pitch-pts-tag{font-size:11.5px;padding:2px 8px;}
-  .chip-role{width:20px;height:20px;font-size:10.5px;}
-}
-.pname{font-weight:600;}
-.psub{font-size:11.5px;color:var(--text-dim);}
-
-.tool-toolbar{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:18px;}
-.tool-toolbar input, .tool-toolbar select{
-  background:var(--surface);border:1px solid var(--border);color:var(--text);
-  padding:9px 12px;border-radius:9px;font-size:13.5px;outline:none;
-}
-.tool-toolbar input:focus, .tool-toolbar select:focus{border-color:var(--accent);}
-
-.swap-card{display:flex;flex-direction:column;gap:12px;padding:18px;}
-.swap-row{display:flex;align-items:center;gap:14px;}
-.swap-player{flex:1;background:var(--surface-2);border-radius:11px;padding:12px 14px;}
-.swap-arrow{color:var(--accent);font-size:20px;font-weight:700;flex-shrink:0;}
-.swap-reason{font-size:13px;color:var(--text-dim);line-height:1.55;border-top:1px solid var(--border);padding-top:12px;}
-.swap-gain{color:var(--accent);font-weight:700;}
-
-.fixture-cell{
-  display:inline-flex;align-items:center;justify-content:center;
-  width:100%;padding:7px 4px;border-radius:7px;font-size:11.5px;font-weight:700;
-}
-
-.diff-1{background:#00E28A;color:#04140D;}
-.diff-2{background:#7FE0B4;color:#04140D;}
-.diff-3{background:#FFB443;color:#3A2600;}
-.diff-4{background:#FF8A5B;color:#3A1400;}
-.diff-5{background:#FF4D4D;color:#3A0000;}
-
-.news-card{display:flex;gap:14px;padding:16px;}
-.news-thumb{width:64px;height:64px;border-radius:10px;background:var(--surface-2);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:22px;}
-.news-title{font-weight:600;font-size:14.5px;line-height:1.4;margin:0 0 4px;}
-.news-meta{font-size:11.5px;color:var(--text-dim);}
-.news-title a{text-decoration:none;}
-.news-title a:hover{color:var(--accent);}
-
-.stat-tile{text-align:left;}
-.stat-tile .v{font-family:'IBM Plex Mono',monospace;font-size:24px;font-weight:600;}
-.stat-tile .l{font-size:12px;color:var(--text-dim);margin-top:2px;}
-
-.matches-wrap{max-width:640px;margin:0 auto;display:flex;flex-direction:column;gap:10px;}
-.matches-scroll{max-height:520px;overflow-y:auto;padding-right:4px;}
-.match-card{
-  background:color-mix(in srgb, var(--surface) 90%, #fff 6%);border:1px solid var(--border);border-radius:var(--radius);
-  padding:14px 20px;display:flex;align-items:center;justify-content:space-between;gap:14px;
-  transition:border-color .15s ease;
-}
-.match-card:hover{border-color:var(--accent2);}
-.match-team{display:flex;align-items:center;gap:10px;flex:1;min-width:0;}
-.match-team img{width:22px;height:22px;object-fit:contain;flex-shrink:0;}
-.match-team span{font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.match-team.away{flex-direction:row-reverse;text-align:right;}
-.team-link{text-decoration:none;color:inherit;display:flex;flex:1;min-width:0;border-radius:8px;transition:background .12s ease;}
-.team-link:hover{background:var(--surface-2);}
-.team-link .match-team{flex:1;}
-.match-score-wrap{display:flex;flex-direction:column;align-items:center;gap:3px;flex-shrink:0;min-width:64px;}
-.match-score{font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:17px;white-space:nowrap;letter-spacing:.02em;}
-.match-status{font-size:9.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);font-weight:700;display:flex;align-items:center;gap:4px;}
-.match-status.is-live{color:var(--accent2);}
-.match-status.is-live::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--accent2);animation:pulse 1.6s infinite;}
-
-.deadline-card{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;gap:12px;flex-wrap:wrap;}
-.dl-left .dl-gw{font-weight:700;font-size:15px;}
-.dl-left .dl-date{font-size:12.5px;color:var(--text-dim);margin-top:2px;}
-.dl-count{font-family:'IBM Plex Mono',monospace;font-size:20px;color:var(--accent);}
-.cal-btn{
-  display:inline-flex;align-items:center;gap:6px;background:var(--surface-2);border:1px solid var(--border);
-  color:var(--text);padding:8px 14px;border-radius:9px;font-size:12.5px;font-weight:600;text-decoration:none;
-}
-.cal-btn:hover{border-color:var(--accent);color:var(--accent);}
-
-.modal-backdrop{
-  position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:100;
-  display:flex;align-items:center;justify-content:center;padding:20px;
-}
-.modal{
-  background:var(--surface);border:1px solid var(--border);border-radius:16px;
-  max-width:520px;width:100%;max-height:85vh;overflow:auto;padding:24px;box-shadow:var(--shadow);
-}
-.modal-close{float:right;background:none;border:none;color:var(--text-dim);font-size:20px;}
-.section-label{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--text-dim);font-weight:700;margin:18px 0 10px;}
-.section-label:first-child{margin-top:0;}
-
-.notice{
-  background:var(--warn-dim);border:1px solid var(--warn);color:var(--warn);
-  padding:12px 14px;border-radius:11px;font-size:12.5px;line-height:1.5;margin-bottom:16px;
-}
-.chip-toggle{display:flex;gap:6px;flex-wrap:wrap;}
-.chip-toggle button{
-  padding:7px 13px;border-radius:100px;border:1px solid var(--border);background:var(--surface);
-  color:var(--text-dim);font-size:12.5px;font-weight:600;
-}
-.chip-toggle button.active{color:var(--accent);border-color:var(--accent);background:var(--accent-dim);}
-
-::-webkit-scrollbar{width:9px;height:9px;}
-::-webkit-scrollbar-thumb{background:var(--border);border-radius:5px;}
-
-@media(max-width:640px){
-  .topbar{padding:12px 16px;}
-  .page{padding:24px 16px 60px;}
-  .team-form{flex-direction:column;}
-  .team-form button{padding:12px;}
-
-  .nav-menu{
-    display:flex;position:fixed;top:0;right:0;height:100vh;width:80vw;max-width:320px;
-    border-radius:0;border-left:1px solid var(--border);border-top:none;
-    box-shadow:-10px 0 30px rgba(0,0,0,0.4);
-    transform:translateX(100%);transition:transform .28s ease;
-    padding:70px 10px 20px;overflow-y:auto;z-index:60;
+/* ---- My Team ---- */
+export async function MyTeamView(){
+  if(!state.teamId){
+    renderRoot(ToolShell(TITLE, DESC, NeedTeamPrompt('My Team')));
+    wireInlineTeamForm(MyTeamView);
+    return;
   }
-  .nav-menu.open{transform:translateX(0);}
-  .nav-item{padding:13px 12px;}
-  .nav-close{
-    display:flex;align-items:center;justify-content:center;
-    position:absolute;top:14px;right:14px;width:34px;height:34px;
-    border-radius:9px;border:1px solid var(--border);background:var(--surface);
-    color:var(--text);font-size:15px;
+  const root = document.getElementById('root');
+  root.innerHTML = ToolShell(TITLE, DESC, skeletonCards(4));
+  try{
+    await ensureBootstrap();
+    await loadPicksForTeam(state.teamId);
+  }catch(e){}
+  renderMyTeamBody();
+}
+
+function viewToggleHtml(){
+  return `
+    <div class="seg-toggle" role="tablist" aria-label="View mode">
+      <button class="seg-btn ${currentView==='pitch'?'is-active':''}" data-view="pitch" type="button">⚽ Pitch</button>
+      <button class="seg-btn ${currentView==='list'?'is-active':''}" data-view="list" type="button">☰ List</button>
+    </div>`;
+}
+
+function metricDropdownHtml(){
+  const active = METRICS.find(m=>m.id===currentMetric);
+  return `
+    <div class="metric-dropdown ${metricMenuOpen?'is-open':''}">
+      <button class="metric-dropdown-btn" type="button" id="metricDropdownBtn">
+        <span class="metric-dropdown-ico">🎛️</span> ${esc(active.label)}
+        <span class="metric-dropdown-caret">${metricMenuOpen?'▲':'▼'}</span>
+      </button>
+      ${metricMenuOpen? `
+        <div class="metric-dropdown-menu" role="menu">
+          ${METRICS.map(m=>`
+            <button class="metric-dropdown-item ${m.id===currentMetric?'is-active':''}" data-metric="${m.id}" type="button" role="menuitem">${esc(m.label)}</button>
+          `).join('')}
+        </div>
+      ` : ''}
+    </div>`;
+}
+
+function wireHeaderControls(){
+  document.querySelectorAll('.seg-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      currentView = btn.dataset.view;
+      metricMenuOpen = false;
+      renderMyTeamBody();
+    });
+  });
+  const dropdownBtn = document.getElementById('metricDropdownBtn');
+  if(dropdownBtn){
+    dropdownBtn.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      metricMenuOpen = !metricMenuOpen;
+      renderMyTeamBody();
+    });
   }
-  .nav-backdrop{
-    position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:55;
-    opacity:0;pointer-events:none;transition:opacity .25s ease;
+  document.querySelectorAll('.metric-dropdown-item').forEach(btn=>{
+    btn.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      currentMetric = btn.dataset.metric;
+      metricMenuOpen = false;
+      renderMyTeamBody();
+    });
+  });
+  if(metricMenuOpen){
+    // Close the menu on an outside click.
+    setTimeout(()=>{
+      document.addEventListener('click', function onDocClick(){
+        metricMenuOpen = false;
+        document.removeEventListener('click', onDocClick);
+        renderMyTeamBody();
+      }, { once:true });
+    }, 0);
   }
-  .nav-backdrop.open{opacity:1;pointer-events:auto;}
+}
+
+function renderMyTeamBody(){
+  const bs = state.bootstrap;
+  let body;
+  if(state.errors.picks){
+    body = `<div class="err-box">${esc(state.errors.picks)}</div>`;
+  }else if(!state.picks){
+    body = skeletonCards(4);
+  }else{
+    const byId = Object.fromEntries(bs.elements.map(e=>[e.id,e]));
+    const picks = state.picks.picks.map(p=>({...p, el: byId[p.element]}));
+    const groups = [1,2,3,4].map(pt=>({
+      pos: POS_SHORT[pt],
+      players: picks.filter(p=>p.el.element_type===pt).sort((a,b)=>a.position-b.position)
+    }));
+    const info = state.entryInfo;
+    const eh = state.picks.entry_history || {};
+
+    const headerHtml = `
+      <div class="grid grid-3" style="margin-bottom:22px;">
+        <div class="card stat-tile"><div class="v mono">${eh.points ?? '—'}</div><div class="l">Points — GW${state.picksEvent?.id ?? ''}</div></div>
+        <div class="card stat-tile"><div class="v mono">£${eh.value? (eh.value/10).toFixed(1):'—'}m</div><div class="l">Squad value</div></div>
+        <div class="card stat-tile"><div class="v mono">£${eh.bank!==undefined? (eh.bank/10).toFixed(1):'—'}m</div><div class="l">In the bank</div></div>
+      </div>
+      ${info? `<div style="color:var(--text-dim);font-size:13px;margin-bottom:18px;">Managing <b style="color:var(--text)">${esc(info.name||'')}</b> — ${esc(info.player_first_name||'')} ${esc(info.player_last_name||'')}</div>` : ''}
+      <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-bottom:18px;">
+        ${viewToggleHtml()}
+        ${currentView==='pitch'? metricDropdownHtml() : ''}
+      </div>
+    `;
+
+    body = headerHtml + (currentView==='pitch' ? pitchViewHtml(groups, bs) : listViewHtml(groups, bs));
+  }
+  document.getElementById('root').innerHTML = ToolShell(TITLE, DESC, body);
+  wireHeaderControls();
+}
+
+/* ---------------------------- List (table) view --------------------------- */
+function listViewHtml(groups, bs){
+  return groups.map(g=>`
+    <div class="section-label">${g.pos}</div>
+    <div class="table-wrap" style="margin-bottom:16px;">
+      <table class="roster-table">
+        <thead><tr><th>Player</th><th>Price</th><th>Form</th><th>Next GW proj.</th><th>Role</th></tr></thead>
+        <tbody>
+          ${g.players.map(p=>{
+            const el = p.el; const t = teamOf(bs, el.team);
+            const role = p.is_captain? '<span class="badge badge-ok">C</span>' : p.is_vice_captain? '<span class="badge badge-mute">VC</span>' : '';
+            const sb = statusBadge(el);
+            return `<tr>
+              <td><div class="player-cell"><img class="crest" src="${crestUrl(t.code)}" onerror="this.style.display='none'"/><div><div class="pname">${esc(el.web_name)} ${sb?`<span class="badge ${sb.cls}" style="margin-left:6px;">${sb.label}</span>`:''}</div><div class="psub">${esc(t.short_name)} · ${p.multiplier===0?'benched':'starting'}</div></div></div></td>
+              <td class="mono">${priceFmt(el.now_cost)}</td>
+              <td class="mono">${el.form}</td>
+              <td class="mono">${el.ep_next}</td>
+              <td>${role}</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>
+  `).join('');
+}
+
+/* ----------------------------- Pitch (visual) view ------------------------- */
+// Resolves the currently-selected metric to a display string + a "good/bad"
+// tint for price-change so it reads at a glance (green up, red down).
+function metricValue(p){
+  const el = p.el;
+  switch(currentMetric){
+    case 'current_price':
+      return { text: priceFmt(el.now_cost) };
+    case 'selling_price':
+      return { text: p.selling_price!==undefined ? priceFmt(p.selling_price) : priceFmt(el.now_cost) };
+    case 'form':
+      return { text: el.form ?? '0.0' };
+    case 'ownership':
+      return { text: `${el.selected_by_percent}%` };
+    case 'price_change': {
+      const change = el.cost_change_event ?? 0;
+      const sign = change > 0 ? '+' : '';
+      return { text: `${sign}${(change/10).toFixed(1)}`, tone: change>0?'up':change<0?'down':null };
+    }
+    case 'points':
+    default:
+      return { text: String(el.event_points ?? 0) };
+  }
+}
+
+function playerChip(p, bs){
+  const el = p.el;
+  const t = teamOf(bs, el.team);
+  const isGK = el.element_type === 1;
+  const roleBadge = p.is_captain? '<span class="chip-role chip-role-c">C</span>'
+    : p.is_vice_captain? '<span class="chip-role chip-role-vc">VC</span>' : '';
+  const sb = statusBadge(el);
+  const metric = metricValue(p);
+  const toneClass = metric.tone==='up' ? 'is-up' : metric.tone==='down' ? 'is-down' : '';
+  return `
+    <div class="pitch-chip">
+      ${roleBadge}
+      <div class="pitch-kit">
+        <img src="${kitUrl(t.code, isGK)}" alt="" onerror="this.onerror=null;this.src='${crestUrl(t.code)}';this.classList.add('is-crest-fallback');"/>
+      </div>
+      <div class="pitch-name-tag">
+        ${esc(el.web_name)}${sb?` <span class="chip-flag" title="${esc(sb.label)}">!</span>`:''}
+      </div>
+      <div class="pitch-pts-tag ${toneClass}">${esc(metric.text)}</div>
+    </div>
+  `;
+}
+
+function pitchViewHtml(groups, bs){
+  const byPos = Object.fromEntries(groups.map(g=>[g.pos, g.players]));
+  const starters = pt => (byPos[pt]||[]).filter(p=>p.multiplier>0);
+  const bench = pt => (byPos[pt]||[]).filter(p=>p.multiplier===0);
+
+  const rows = [
+    { label:'GKP', players: starters('GKP') },
+    { label:'DEF', players: starters('DEF') },
+    { label:'MID', players: starters('MID') },
+    { label:'FWD', players: starters('FWD') },
+  ].filter(r=>r.players.length);
+
+  const benchPlayers = [...bench('GKP'), ...bench('DEF'), ...bench('MID'), ...bench('FWD')];
+
+  return `
+    <div class="pitch-wrap">
+      <div class="pitch-field">
+        ${rows.map(r=>`
+          <div class="pitch-row">
+            ${r.players.map(p=>playerChip(p, bs)).join('')}
+          </div>
+        `).join('')}
+      </div>
+    </div>
+    ${benchPlayers.length? `
+      <div class="section-label" style="margin-top:20px;">Substitutes</div>
+      <div class="pitch-bench">
+        ${benchPlayers.map(p=>playerChip(p, bs)).join('')}
+      </div>
+    ` : ''}
+  `;
 }
