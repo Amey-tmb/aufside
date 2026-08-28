@@ -22,7 +22,11 @@ export async function TeamView(id){
     const data = await fetchWithTimeout(`/api/team?id=${encodeURIComponent(id)}`, 10000);
     renderTeamBody(data);
   }catch(e){
-    renderRoot(ToolShell('Team','Squad and club info.', `<div class="err-box">Could not load this club (${esc(e.message)}).</div>`));
+    const isRateLimited = /429/.test(e.message);
+    const msg = isRateLimited
+      ? 'The football data provider is getting a lot of requests right now. Give it a minute and try again.'
+      : `Could not load this club (${esc(e.message)}).`;
+    renderRoot(ToolShell('Team','Squad and club info.', `<div class="err-box">${msg}</div>`));
   }
 }
 
