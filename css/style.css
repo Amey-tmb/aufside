@@ -262,6 +262,17 @@ tbody tr:hover{background:var(--surface-2);}
 .roster-table .pname,
 .roster-table .psub{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 
+.squad-table{table-layout:fixed;}
+.squad-table th:nth-child(1),
+.squad-table td:nth-child(1){width:8%;}
+.squad-table th:nth-child(2),
+.squad-table td:nth-child(2){width:47%;}
+.squad-table th:nth-child(3),
+.squad-table td:nth-child(3){width:32%;}
+.squad-table th:nth-child(4),
+.squad-table td:nth-child(4){width:13%;}
+.squad-table .pname{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block;}
+
 .player-cell{display:flex;align-items:center;gap:10px;}
 .crest{width:20px;height:20px;object-fit:contain;}
 
