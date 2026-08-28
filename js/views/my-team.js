@@ -10,9 +10,20 @@ import { renderRoot } from '../app.js';
 const TITLE = 'My Team';
 const DESC = 'Your imported squad for this gameweek.';
 
-// Remembers which view the user last chose so it persists across re-renders
-// within the session (not just for this one call).
+// Remembers which view/metric the user last chose so it persists across
+// re-renders within the session (not just for this one call).
 let currentView = 'pitch'; // 'pitch' | 'list'
+let currentMetric = 'points'; // which stat is shown on each pitch chip
+let metricMenuOpen = false;
+
+const METRICS = [
+  { id:'points',        label:'Points' },
+  { id:'current_price',  label:'Current Price' },
+  { id:'selling_price',  label:'Selling Price' },
+  { id:'form',           label:'Form' },
+  { id:'ownership',      label:'Ownership' },
+  { id:'price_change',   label:'Price Change' },
+];
 
 /* ---- My Team ---- */
 export async function MyTeamView(){
@@ -38,13 +49,58 @@ function viewToggleHtml(){
     </div>`;
 }
 
-function wireViewToggle(){
+function metricDropdownHtml(){
+  const active = METRICS.find(m=>m.id===currentMetric);
+  return `
+    <div class="metric-dropdown ${metricMenuOpen?'is-open':''}">
+      <button class="metric-dropdown-btn" type="button" id="metricDropdownBtn">
+        <span class="metric-dropdown-ico">🎛️</span> ${esc(active.label)}
+        <span class="metric-dropdown-caret">${metricMenuOpen?'▲':'▼'}</span>
+      </button>
+      ${metricMenuOpen? `
+        <div class="metric-dropdown-menu" role="menu">
+          ${METRICS.map(m=>`
+            <button class="metric-dropdown-item ${m.id===currentMetric?'is-active':''}" data-metric="${m.id}" type="button" role="menuitem">${esc(m.label)}</button>
+          `).join('')}
+        </div>
+      ` : ''}
+    </div>`;
+}
+
+function wireHeaderControls(){
   document.querySelectorAll('.seg-btn').forEach(btn=>{
     btn.addEventListener('click', ()=>{
       currentView = btn.dataset.view;
+      metricMenuOpen = false;
       renderMyTeamBody();
     });
   });
+  const dropdownBtn = document.getElementById('metricDropdownBtn');
+  if(dropdownBtn){
+    dropdownBtn.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      metricMenuOpen = !metricMenuOpen;
+      renderMyTeamBody();
+    });
+  }
+  document.querySelectorAll('.metric-dropdown-item').forEach(btn=>{
+    btn.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      currentMetric = btn.dataset.metric;
+      metricMenuOpen = false;
+      renderMyTeamBody();
+    });
+  });
+  if(metricMenuOpen){
+    // Close the menu on an outside click.
+    setTimeout(()=>{
+      document.addEventListener('click', function onDocClick(){
+        metricMenuOpen = false;
+        document.removeEventListener('click', onDocClick);
+        renderMyTeamBody();
+      }, { once:true });
+    }, 0);
+  }
 }
 
 function renderMyTeamBody(){
@@ -71,13 +127,16 @@ function renderMyTeamBody(){
         <div class="card stat-tile"><div class="v mono">£${eh.bank!==undefined? (eh.bank/10).toFixed(1):'—'}m</div><div class="l">In the bank</div></div>
       </div>
       ${info? `<div style="color:var(--text-dim);font-size:13px;margin-bottom:18px;">Managing <b style="color:var(--text)">${esc(info.name||'')}</b> — ${esc(info.player_first_name||'')} ${esc(info.player_last_name||'')}</div>` : ''}
-      <div style="margin-bottom:18px;">${viewToggleHtml()}</div>
+      <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-bottom:18px;">
+        ${viewToggleHtml()}
+        ${currentView==='pitch'? metricDropdownHtml() : ''}
+      </div>
     `;
 
     body = headerHtml + (currentView==='pitch' ? pitchViewHtml(groups, bs) : listViewHtml(groups, bs));
   }
   document.getElementById('root').innerHTML = ToolShell(TITLE, DESC, body);
-  wireViewToggle();
+  wireHeaderControls();
 }
 
 /* ---------------------------- List (table) view --------------------------- */
@@ -107,14 +166,39 @@ function listViewHtml(groups, bs){
 }
 
 /* ----------------------------- Pitch (visual) view ------------------------- */
-function playerChip(p, bs, opts={}){
+// Resolves the currently-selected metric to a display string + a "good/bad"
+// tint for price-change so it reads at a glance (green up, red down).
+function metricValue(p){
+  const el = p.el;
+  switch(currentMetric){
+    case 'current_price':
+      return { text: priceFmt(el.now_cost) };
+    case 'selling_price':
+      return { text: p.selling_price!==undefined ? priceFmt(p.selling_price) : priceFmt(el.now_cost) };
+    case 'form':
+      return { text: el.form ?? '0.0' };
+    case 'ownership':
+      return { text: `${el.selected_by_percent}%` };
+    case 'price_change': {
+      const change = el.cost_change_event ?? 0;
+      const sign = change > 0 ? '+' : '';
+      return { text: `${sign}${(change/10).toFixed(1)}`, tone: change>0?'up':change<0?'down':null };
+    }
+    case 'points':
+    default:
+      return { text: String(el.event_points ?? 0) };
+  }
+}
+
+function playerChip(p, bs){
   const el = p.el;
   const t = teamOf(bs, el.team);
   const isGK = el.element_type === 1;
   const roleBadge = p.is_captain? '<span class="chip-role chip-role-c">C</span>'
     : p.is_vice_captain? '<span class="chip-role chip-role-vc">VC</span>' : '';
   const sb = statusBadge(el);
-  const pts = el.event_points ?? 0;
+  const metric = metricValue(p);
+  const toneClass = metric.tone==='up' ? 'is-up' : metric.tone==='down' ? 'is-down' : '';
   return `
     <div class="pitch-chip">
       ${roleBadge}
@@ -124,7 +208,7 @@ function playerChip(p, bs, opts={}){
       <div class="pitch-name-tag">
         ${esc(el.web_name)}${sb?` <span class="chip-flag" title="${esc(sb.label)}">!</span>`:''}
       </div>
-      <div class="pitch-pts-tag">${pts}</div>
+      <div class="pitch-pts-tag ${toneClass}">${esc(metric.text)}</div>
     </div>
   `;
 }
