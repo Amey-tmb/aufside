@@ -1,5 +1,6 @@
 import json
 import os
+import time
 import urllib.request
 import urllib.error
 import urllib.parse
@@ -12,12 +13,24 @@ from http.server import BaseHTTPRequestHandler
 # Query params:
 #   ?id=N   required. football-data.org team ID (passed through from the
 #           team objects already returned by /api/livescores).
+#
+# football-data.org's free tier has a very low per-minute rate limit shared
+# across ALL visitors to this app, so 429s are expected under normal use.
+# We (a) cache successful responses for much longer so repeat views of the
+# same club don't re-hit the upstream API, and (b) retry once with a short
+# backoff before giving up on a 429.
 
 
-def _fetch_json(url, headers):
+def _fetch_json(url, headers, retry_on_429=True):
     req = urllib.request.Request(url, headers=headers)
-    with urllib.request.urlopen(req, timeout=10) as resp:
-        return json.loads(resp.read().decode('utf-8'))
+    try:
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            return json.loads(resp.read().decode('utf-8'))
+    except urllib.error.HTTPError as e:
+        if e.code == 429 and retry_on_429:
+            time.sleep(1.5)
+            return _fetch_json(url, headers, retry_on_429=False)
+        raise
 
 
 class handler(BaseHTTPRequestHandler):
@@ -39,7 +52,10 @@ class handler(BaseHTTPRequestHandler):
         try:
             team = _fetch_json(f'https://api.football-data.org/v4/teams/{team_id}', headers)
         except urllib.error.HTTPError as e:
-            self._send_json(e.code, {'error': f'football-data.org returned {e.code} for team {team_id}'})
+            if e.code == 429:
+                self._send_json(429, {'error': 'The football data provider is rate-limiting us right now — please wait a minute and try again.'})
+            else:
+                self._send_json(e.code, {'error': f'football-data.org returned {e.code} for team {team_id}'})
             return
         except Exception as e:
             self._send_json(502, {'error': f'Fetch failed: {e}'})
@@ -104,7 +120,7 @@ class handler(BaseHTTPRequestHandler):
         self.send_response(status)
         self.send_header('Content-Type', 'application/json')
         if cache:
-            self.send_header('Cache-Control', 's-maxage=300, stale-while-revalidate=600')
+            self.send_header('Cache-Control', 's-maxage=21600, stale-while-revalidate=86400')
         self.send_header('Content-Length', str(len(body)))
         self.end_headers()
         self.wfile.write(body)
