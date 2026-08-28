@@ -250,6 +250,34 @@ tbody tr:hover{background:var(--surface-2);}
 .gw-arrow:hover:not(:disabled){border-color:var(--accent2);}
 .gw-arrow:disabled{opacity:.3;cursor:default;}
 .gw-label{font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:15px;min-width:110px;text-align:center;}
+
+/* ---- Fixtures Calendar ---- */
+.cal-month{max-width:640px;margin:0 auto;display:flex;flex-direction:column;gap:22px;}
+.cal-day-group{display:flex;flex-direction:column;gap:8px;}
+.cal-day-label{
+  font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;
+  color:var(--text-dim);padding-left:4px;
+}
+.cal-fixture{
+  display:flex;align-items:center;gap:10px;background:var(--surface);
+  border:1px solid var(--border);border-radius:var(--radius);padding:12px 16px;
+}
+.cal-team{display:flex;align-items:center;gap:10px;flex:1;min-width:0;}
+.cal-team-home{justify-content:flex-end;text-align:right;}
+.cal-team-away{justify-content:flex-start;text-align:left;}
+.cal-team-name{font-weight:600;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.cal-center{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  min-width:64px;gap:2px;
+}
+.cal-score{font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:15px;}
+.cal-kickoff{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--text-dim);}
+.cal-ft{font-size:10px;color:var(--text-dim);letter-spacing:.05em;}
+@media(max-width:640px){
+  .cal-team-name{font-size:12.5px;}
+  .cal-fixture{padding:10px 10px;gap:6px;}
+  .cal-center{min-width:52px;}
+}
 .table-wrap table{min-width:600px;}
 
 .roster-table{table-layout:fixed;}
@@ -466,6 +494,16 @@ tbody tr:hover{background:var(--surface-2);}
   color:var(--text-dim);font-size:12.5px;font-weight:600;
 }
 .chip-toggle button.active{color:var(--accent);border-color:var(--accent);background:var(--accent-dim);}
+
+/* ---- Form guide strip (league table) ---- */
+.form-strip{display:flex;gap:4px;}
+.form-pill{
+  width:20px;height:20px;border-radius:5px;display:flex;align-items:center;justify-content:center;
+  font-size:10.5px;font-weight:800;color:#fff;
+}
+.form-pill.form-W{background:#1f9d55;}
+.form-pill.form-D{background:#6b7280;}
+.form-pill.form-L{background:#c0392b;}
 
 @media(max-width:640px){
   .topbar{padding:12px 16px;}
