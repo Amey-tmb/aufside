@@ -22,7 +22,11 @@ export async function LiveView(gw){
     currentGw = scoreboard.matchday;
     renderLiveBody(scoreboard, standings);
   }catch(e){
-    renderRoot(ToolShell(TITLE, DESC, `<div class="err-box">Live data is unavailable right now (${esc(e.message)}).</div>`));
+    const isRateLimited = /429/.test(e.message);
+    const msg = isRateLimited
+      ? 'The football data provider is getting a lot of requests right now. Give it a minute and try again.'
+      : `Live data is unavailable right now (${esc(e.message)}).`;
+    renderRoot(ToolShell(TITLE, DESC, `<div class="err-box">${msg}</div>`));
   }
 }
 // Live scores/standings are fetched via api/livescores.py (server-side,
