@@ -6,6 +6,7 @@ export const TOOLS = [
   {path:'/transfer-news', label:'Transfer News', sub:'Real-world club transfers', ico:'📰'},
   {path:'/players', label:'Player Explorer', sub:'Search, filter, compare', ico:'🔍'},
   {path:'/fixtures', label:'Fixture Difficulty', sub:'Next 5 gameweeks, colour-coded', ico:'📅'},
+  {path:'/calendar', label:'Fixtures Calendar', sub:'Every match this season, by month', ico:'🗓️'},
   {path:'/live', label:'Live Scores & Table', sub:'Premier League standings', ico:'⚽'},
   {path:'/mini-league', label:'Mini-League', sub:'Standings for your private league', ico:'🏆'},
   {path:'/deadlines', label:'Deadline Reminders', sub:'Next gameweek deadlines', ico:'⏰'},
