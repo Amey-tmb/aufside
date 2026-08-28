@@ -49,14 +49,19 @@ function renderLiveBody(scoreboard, standings){
     const entries = standings.children?.[0]?.standings?.entries || standings.standings?.[0]?.entries || [];
     if(entries.length){
       tableHtml = `<div class="table-wrap table-scroll"><table>
-        <thead><tr><th>#</th><th>Club</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GD</th><th>Pts</th></tr></thead>
+        <thead><tr><th>#</th><th>Club</th><th>Form</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GD</th><th>Pts</th></tr></thead>
         <tbody>${entries.map((e,i)=>{
           const stats = Object.fromEntries((e.stats||[]).map(s=>[s.name, s.value]));
           const id = e.team?.id;
           const nameCell = `<div class="player-cell"><img class="crest" src="${e.team?.logos?.[0]?.href||''}" onerror="this.style.display='none'"/><span class="pname">${esc(e.team?.shortDisplayName||e.team?.displayName||'')}</span></div>`;
+          const form = e.form || [];
+          const formHtml = form.length
+            ? `<div class="form-strip">${form.slice(-5).map(r=>`<span class="form-pill form-${r}">${esc(r)}</span>`).join('')}</div>`
+            : '<span class="text-dim mono" style="font-size:12px;">—</span>';
           return `<tr>
             <td class="mono">${i+1}</td>
             <td>${id?`<a class="team-link" href="#/team/${id}">${nameCell}</a>`:nameCell}</td>
+            <td>${formHtml}</td>
             <td class="mono">${stats.gamesPlayed??''}</td>
             <td class="mono">${stats.wins??''}</td>
             <td class="mono">${stats.ties??''}</td>
