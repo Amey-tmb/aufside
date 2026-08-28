@@ -127,16 +127,68 @@ function renderMyTeamBody(){
         <div class="card stat-tile"><div class="v mono">£${eh.bank!==undefined? (eh.bank/10).toFixed(1):'—'}m</div><div class="l">In the bank</div></div>
       </div>
       ${info? `<div style="color:var(--text-dim);font-size:13px;margin-bottom:18px;">Managing <b style="color:var(--text)">${esc(info.name||'')}</b> — ${esc(info.player_first_name||'')} ${esc(info.player_last_name||'')}</div>` : ''}
-      <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-bottom:18px;">
-        ${viewToggleHtml()}
-        ${currentView==='pitch'? metricDropdownHtml() : ''}
+      <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;margin-bottom:18px;">
+        <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;">
+          ${viewToggleHtml()}
+          ${currentView==='pitch'? metricDropdownHtml() : ''}
+        </div>
+        ${currentView==='pitch'? `<button class="download-sheet-btn" id="downloadSheetBtn" type="button">📥 Download team sheet</button>` : ''}
       </div>
     `;
 
-    body = headerHtml + (currentView==='pitch' ? pitchViewHtml(groups, bs) : listViewHtml(groups, bs));
+    body = headerHtml + `<div id="teamSheetCapture">` + (currentView==='pitch' ? pitchViewHtml(groups, bs) : listViewHtml(groups, bs)) + `</div>`;
   }
   document.getElementById('root').innerHTML = ToolShell(TITLE, DESC, body);
   wireHeaderControls();
+  wireDownloadButton();
+}
+
+/* ---------------------------- Team sheet export ---------------------------- */
+// Renders #teamSheetCapture (the pitch + bench) to a PNG using html2canvas
+// and triggers a browser download — entirely client-side, no server call.
+function wireDownloadButton(){
+  const btn = document.getElementById('downloadSheetBtn');
+  if(!btn) return;
+  btn.addEventListener('click', async ()=>{
+    if(typeof html2canvas === 'undefined'){
+      alert('Could not export right now — the export library failed to load. Check your connection and try again.');
+      return;
+    }
+    const target = document.getElementById('teamSheetCapture');
+    if(!target) return;
+
+    const originalLabel = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Preparing…';
+
+    try{
+      const bgColor = getComputedStyle(document.body).getPropertyValue('--bg').trim() || '#0B0E11';
+      const canvas = await html2canvas(target, {
+        backgroundColor: bgColor,
+        scale: 2,
+        useCORS: true,
+        onclone: (clonedDoc)=>{
+          // html2canvas's older rendering engine doesn't understand the
+          // modern color-mix() function used for the bench background, so
+          // swap it for a plain solid colour just in the cloned copy used
+          // for export — the real page on screen is untouched.
+          clonedDoc.querySelectorAll('.pitch-bench').forEach(el=>{
+            el.style.background = '#12161C';
+          });
+        },
+      });
+      const link = document.createElement('a');
+      const teamName = state.entryInfo?.name ? state.entryInfo.name.replace(/[^a-z0-9]+/gi,'-').toLowerCase() : 'my-team';
+      link.download = `aufside-${teamName}-gw${state.picksEvent?.id ?? ''}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    }catch(e){
+      alert('Export failed — some club crests/kits are hosted on servers that block image export. Try again, or use your device\'s screenshot instead.');
+    }finally{
+      btn.disabled = false;
+      btn.textContent = originalLabel;
+    }
+  });
 }
 
 /* ---------------------------- List (table) view --------------------------- */
