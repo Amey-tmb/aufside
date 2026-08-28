@@ -119,8 +119,14 @@ class handler(BaseHTTPRequestHandler):
         entries = []
         for row in table:
             team = row.get('team', {})
+            # football-data.org returns 'form' as a comma-separated string of
+            # the last few results, oldest first, e.g. "L,D,W,W,L" — only
+            # populated on some plans/competitions, so this may be None.
+            form_raw = row.get('form')
+            form = [r.strip() for r in form_raw.split(',')] if form_raw else []
             entries.append({
                 'team': {'id': team.get('id'), 'shortDisplayName': team.get('shortName') or team.get('name'), 'logos': [{'href': team.get('crest')}]},
+                'form': form,
                 'stats': [
                     {'name': 'gamesPlayed', 'value': row.get('playedGames')},
                     {'name': 'wins', 'value': row.get('won')},
