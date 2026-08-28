@@ -4,6 +4,7 @@ import { POS_SHORT } from './constants.js';
 export function posOf(el){ return POS_SHORT[el.element_type]; }
 export function teamOf(bs, teamId){ return bs.teams.find(t=>t.id===teamId); }
 export function crestUrl(teamCode){ return `https://resources.premierleague.com/premierleague/badges/50/t${teamCode}.png`; }
+export function kitUrl(teamCode, isGoalkeeper){ return `https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_${teamCode}${isGoalkeeper?'_1':''}-66.png`; }
 export function photoUrl(code){ return `https://resources.premierleague.com/premierleague/photos/players/110x140/p${code}.png`; }
 export function priceFmt(now_cost){ return '£' + (now_cost/10).toFixed(1) + 'm'; }
 export function statusBadge(el){
@@ -129,4 +130,3 @@ export function reasonFor(out, inn, bs){
   if(bits.length===0) bits.push('a modest all-round upgrade this week');
   return bits.join(', ');
 }
-
