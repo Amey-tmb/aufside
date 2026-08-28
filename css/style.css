@@ -241,6 +241,21 @@ tbody tr:hover{background:var(--surface-2);}
 .gw-label{font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:15px;min-width:110px;text-align:center;}
 .table-wrap table{min-width:600px;}
 
+.roster-table{table-layout:fixed;}
+.roster-table th:nth-child(1),
+.roster-table td:nth-child(1){width:42%;}
+.roster-table th:nth-child(2),
+.roster-table td:nth-child(2){width:16%;}
+.roster-table th:nth-child(3),
+.roster-table td:nth-child(3){width:14%;}
+.roster-table th:nth-child(4),
+.roster-table td:nth-child(4){width:18%;}
+.roster-table th:nth-child(5),
+.roster-table td:nth-child(5){width:10%;}
+.roster-table td:nth-child(1) .player-cell{overflow:hidden;}
+.roster-table .pname,
+.roster-table .psub{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+
 .player-cell{display:flex;align-items:center;gap:10px;}
 .crest{width:20px;height:20px;object-fit:contain;}
 .pname{font-weight:600;}
