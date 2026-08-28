@@ -2,6 +2,7 @@ import { state } from './state.js';
 import { loadSavedTeamId, loadSavedLeagueId } from './storage.js';
 import { currentPath } from './router.js';
 import { applyTheme, wireThemeToggle } from './theme.js';
+import { wireInstallPrompt } from './install.js';
 import { buildNavMenu, wireNavTrigger } from './nav.js';
 import { ensureBootstrap } from './api.js';
 import { LandingView, loadHomeLive, loadHomeNews } from './views/landing.js';
@@ -55,6 +56,7 @@ function wireGlobalNav(){
   document.querySelector('.brand').addEventListener('click', ()=>{ location.hash = '/'; });
   wireThemeToggle();
   wireNavTrigger();
+  wireInstallPrompt();
 }
 
 (async function boot(){
