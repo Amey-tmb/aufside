@@ -48,7 +48,7 @@ function renderMyTeamBody(){
       ${groups.map(g=>`
         <div class="section-label">${g.pos}</div>
         <div class="table-wrap" style="margin-bottom:16px;">
-          <table>
+          <table class="roster-table">
             <thead><tr><th>Player</th><th>Price</th><th>Form</th><th>Next GW proj.</th><th>Role</th></tr></thead>
             <tbody>
               ${g.players.map(p=>{
