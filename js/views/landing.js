@@ -4,6 +4,11 @@ import { fetchRSS, NewsCardHtml } from '../news.js';
 import { skeletonRows, skeletonCards, skeletonTable } from '../skeletons.js';
 import { matchCardsHtml } from '../match-card.js';
 
+// Tracks which gameweek is currently shown on the home page so the prev/next
+// arrows can re-fetch without losing place. null = "let the server pick the
+// current one" (used on first load).
+let currentGw = null;
+
 export function LandingView(){
   return `
   <div class="landing">
@@ -19,6 +24,7 @@ export function LandingView(){
   </div>
   <div class="home-section">
     <div class="section-label">Live scores</div>
+    <div id="homeGwNav"></div>
     <div id="homeLive">${skeletonCards(4)}</div>
   </div>
   <div class="home-section">
@@ -32,38 +38,60 @@ export function LandingView(){
   `;
 }
 
-export async function loadHomeLive(){
+export async function loadHomeLive(gw){
+  if(gw !== undefined) currentGw = gw;
+  const liveEl = document.getElementById('homeLive');
+  const stEl = document.getElementById('homeStandings');
+  if(liveEl) liveEl.innerHTML = skeletonCards(4);
+  if(stEl) stEl.innerHTML = skeletonTable(6);
   try{
-    const {scoreboard, standings} = await fetchWithTimeout('/api/livescores', 10000);
+    const qs = currentGw ? `?matchday=${currentGw}` : '';
+    const {scoreboard, standings} = await fetchWithTimeout('/api/livescores' + qs, 10000);
+    currentGw = scoreboard.matchday;
+    renderHomeGwNav(scoreboard);
     renderHomeLive(scoreboard);
     renderHomeStandings(standings);
   }catch(e){
-    const liveEl = document.getElementById('homeLive');
     if(liveEl) liveEl.innerHTML = `<div class="err-box">Live scores are unavailable right now (${esc(e.message)}).</div>`;
-    const stEl = document.getElementById('homeStandings');
     if(stEl) stEl.innerHTML = `<div class="empty-box">Standings unavailable.</div>`;
   }
+}
+function renderHomeGwNav(scoreboard){
+  const el = document.getElementById('homeGwNav');
+  if(!el) return;
+  const gw = scoreboard.matchday;
+  const total = scoreboard.totalMatchdays || 38;
+  el.innerHTML = `
+    <div class="gw-nav">
+      <button class="gw-arrow" id="homeGwPrev" ${gw<=1?'disabled':''} aria-label="Previous gameweek">←</button>
+      <div class="gw-label">Gameweek ${gw}</div>
+      <button class="gw-arrow" id="homeGwNext" ${gw>=total?'disabled':''} aria-label="Next gameweek">→</button>
+    </div>`;
+  document.getElementById('homeGwPrev')?.addEventListener('click', ()=>{ if(gw>1) loadHomeLive(gw-1); });
+  document.getElementById('homeGwNext')?.addEventListener('click', ()=>{ if(gw<total) loadHomeLive(gw+1); });
 }
 function renderHomeLive(scoreboard){
   const el = document.getElementById('homeLive');
   if(!el) return;
-  const events = (scoreboard.events||[]).slice(0,6);
-  el.innerHTML = matchCardsHtml(events);
+  const events = scoreboard.events || [];
+  el.innerHTML = `<div class="matches-scroll">${matchCardsHtml(events)}</div>`;
 }
 function renderHomeStandings(standings){
   const el = document.getElementById('homeStandings');
   if(!el) return;
   let tableHtml = '<div class="empty-box">Standings unavailable.</div>';
   try{
-    const entries = (standings.children?.[0]?.standings?.entries || standings.standings?.[0]?.entries || []).slice(0,10);
+    const entries = standings.children?.[0]?.standings?.entries || standings.standings?.[0]?.entries || [];
     if(entries.length){
-      tableHtml = `<div class="table-wrap"><table>
+      tableHtml = `<div class="table-wrap table-scroll"><table>
         <thead><tr><th>#</th><th>Club</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GD</th><th>Pts</th></tr></thead>
         <tbody>${entries.map((e,i)=>{
           const stats = Object.fromEntries((e.stats||[]).map(s=>[s.name, s.value]));
+          const id = e.team?.id;
+          const nameCell = `<div class="player-cell"><img class="crest" src="${e.team?.logos?.[0]?.href||''}" onerror="this.style.display='none'"/><span class="pname">${esc(e.team?.shortDisplayName||e.team?.displayName||'')}</span></div>`;
           return `<tr>
             <td class="mono">${i+1}</td>
-            <td><div class="player-cell"><img class="crest" src="${e.team?.logos?.[0]?.href||''}" onerror="this.style.display='none'"/><span class="pname">${esc(e.team?.shortDisplayName||e.team?.displayName||'')}</span></div></td>
+            <td>${id?`<a class="team-link" href="#/team/${id}">${nameCell}</a>`:nameCell}</td>
             <td class="mono">${stats.gamesPlayed??''}</td>
             <td class="mono">${stats.wins??''}</td>
             <td class="mono">${stats.ties??''}</td>

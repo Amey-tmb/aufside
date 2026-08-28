@@ -120,7 +120,7 @@ async function openPlayerModal(id, bs){
         type:'bar',
         data:{
           labels: hist.map(h=>'GW'+h.round),
-          datasets:[{ label:'Points', data: hist.map(h=>h.total_points), backgroundColor: getComputedStyle(document.body).getPropertyValue('--accent') || '#00E28A', borderRadius:5 }]
+          datasets:[{ label:'Points', data: hist.map(h=>h.total_points), backgroundColor: getComputedStyle(document.body).getPropertyValue('--accent') || '#DC052D', borderRadius:5 }]
         },
         options:{
           plugins:{legend:{display:false}},

@@ -15,7 +15,7 @@ function NeedLeaguePrompt(){
       <div style="color:var(--text-dim);font-size:13.5px;margin-bottom:18px;">Enter your classic mini-league ID — find it in the URL when you view your league on the official FPL site.</div>
       <form id="inlineLeagueForm" style="display:flex;gap:8px;max-width:360px;margin:0 auto;">
         <input type="text" inputmode="numeric" id="inlineLeagueInput" placeholder="League ID" style="flex:1;background:var(--surface-2);border:1px solid var(--border);border-radius:9px;padding:10px 12px;color:var(--text);outline:none;">
-        <button type="submit" style="background:var(--accent);color:#04140D;border:none;border-radius:9px;padding:0 16px;font-weight:700;">Load</button>
+        <button type="submit" style="background:var(--accent);color:#FFFFFF;border:none;border-radius:9px;padding:0 16px;font-weight:700;">Load</button>
       </form>
     </div>`;
 }
@@ -51,7 +51,7 @@ function renderMiniLeagueBody(data){
   const rows = results.map(r=>{
     const moved = (r.last_rank||0) - r.rank;
     const moveIcon = moved>0 ? '▲' : moved<0 ? '▼' : '—';
-    const moveColor = moved>0 ? 'var(--accent)' : moved<0 ? 'var(--bad)' : 'var(--text-dim)';
+    const moveColor = moved>0 ? 'var(--accent2)' : moved<0 ? 'var(--bad)' : 'var(--text-dim)';
     const isYou = state.entryInfo && String(r.entry)===String(state.entryInfo.id);
     return `<tr${isYou?` style="background:var(--accent-dim);"`:''}>
       <td class="mono">${r.rank}</td>
