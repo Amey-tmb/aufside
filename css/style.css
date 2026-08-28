@@ -36,8 +36,10 @@
   --shadow: 0 8px 24px rgba(20,30,25,0.08);
 }
 *{box-sizing:border-box;}
-html,body{margin:0;padding:0;}
+html,body{margin:0;padding:0;overflow-x:hidden;width:100%;max-width:100%;}
+html{touch-action:pan-y;}
 body{
+  touch-action:pan-y;
   background:var(--bg);
   color:var(--text);
   font-family:'Inter',system-ui,sans-serif;
@@ -164,7 +166,7 @@ input,select{font-family:inherit;}
 .quick-chip:hover{color:var(--accent);border-color:var(--accent);}
 
 /* ---------- Page shell ---------- */
-.page{max-width:1180px;margin:0 auto;padding:32px 24px 80px;}
+.page{max-width:1180px;margin:0 auto;padding:32px 24px 80px;overflow-x:hidden;}
 .page-head{margin-bottom:26px;}
 .page-head h2{font-family:'Space Grotesk',sans-serif;font-size:26px;margin:0 0 6px;letter-spacing:-0.01em;}
 .page-head p{color:var(--text-dim);font-size:14px;margin:0;max-width:640px;line-height:1.55;}
