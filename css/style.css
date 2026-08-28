@@ -279,48 +279,52 @@ tbody tr:hover{background:var(--surface-2);}
   background:
     repeating-linear-gradient(180deg, rgba(255,255,255,.05) 0 60px, rgba(255,255,255,0) 60px 120px),
     linear-gradient(180deg, #1e8a4c, #14652f 60%, #0f4d24);
-  padding:28px 12px;display:flex;flex-direction:column;justify-content:space-around;gap:22px;min-height:420px;
+  padding:44px 20px;display:flex;flex-direction:column;justify-content:space-around;gap:30px;min-height:560px;
 }
-.pitch-row{display:flex;justify-content:center;flex-wrap:wrap;gap:14px;}
+.pitch-row{display:flex;justify-content:center;flex-wrap:wrap;gap:22px;}
 .pitch-chip{
-  position:relative;display:flex;flex-direction:column;align-items:center;width:76px;
+  position:relative;display:flex;flex-direction:column;align-items:center;width:100px;
 }
 .pitch-kit{
-  width:52px;height:52px;display:flex;align-items:center;justify-content:center;
-  filter:drop-shadow(0 3px 4px rgba(0,0,0,.35));
+  width:78px;height:78px;display:flex;align-items:center;justify-content:center;
+  filter:drop-shadow(0 4px 6px rgba(0,0,0,.4));
 }
 .pitch-kit img{width:100%;height:100%;object-fit:contain;}
 .pitch-kit img.is-crest-fallback{
-  width:36px;height:36px;border-radius:50%;background:#fff;padding:4px;
+  width:52px;height:52px;border-radius:50%;background:#fff;padding:6px;
 }
 .pitch-name-tag{
-  margin-top:4px;background:#0d1117;color:#fff;font-size:11px;font-weight:700;
-  padding:3px 8px;border-radius:5px;white-space:nowrap;max-width:76px;overflow:hidden;
+  margin-top:6px;background:#0d1117;color:#fff;font-size:13.5px;font-weight:700;
+  padding:5px 10px;border-radius:6px;white-space:nowrap;max-width:100px;overflow:hidden;
   text-overflow:ellipsis;box-shadow:0 2px 4px rgba(0,0,0,.3);
 }
 .pitch-pts-tag{
-  margin-top:2px;background:var(--accent);color:#fff;font-size:11px;font-weight:800;
-  padding:2px 8px;border-radius:5px;
+  margin-top:4px;background:var(--accent);color:#fff;font-size:13.5px;font-weight:800;
+  padding:3px 10px;border-radius:6px;
 }
 .chip-role{
-  position:absolute;top:-4px;left:-2px;width:18px;height:18px;border-radius:50%;
-  font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;
+  position:absolute;top:-6px;left:-4px;width:24px;height:24px;border-radius:50%;
+  font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;
   color:#fff;z-index:2;box-shadow:0 1px 3px rgba(0,0,0,.4);
 }
 .chip-role-c{background:var(--bad,#c0392b);}
 .chip-role-vc{background:#555;}
 .chip-flag{
-  display:inline-flex;align-items:center;justify-content:center;width:12px;height:12px;
-  border-radius:50%;background:#f5b942;color:#111;font-size:9px;font-weight:800;
+  display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;
+  border-radius:50%;background:#f5b942;color:#111;font-size:10px;font-weight:800;
 }
 .pitch-bench{
-  display:flex;flex-wrap:wrap;gap:14px;padding:16px;border:1px solid var(--border);
+  display:flex;flex-wrap:wrap;justify-content:center;gap:22px;padding:22px;border:1px solid var(--border);
   border-radius:var(--radius);background:color-mix(in srgb, var(--surface) 90%, #fff 6%);
 }
 @media(max-width:640px){
-  .pitch-chip{width:64px;}
-  .pitch-kit{width:42px;height:42px;}
-  .pitch-name-tag,.pitch-pts-tag{font-size:10px;max-width:64px;}
+  .pitch-field{padding:30px 10px;gap:22px;min-height:460px;}
+  .pitch-row{gap:14px;}
+  .pitch-chip{width:78px;}
+  .pitch-kit{width:58px;height:58px;}
+  .pitch-name-tag{font-size:11.5px;max-width:78px;padding:4px 8px;}
+  .pitch-pts-tag{font-size:11.5px;padding:2px 8px;}
+  .chip-role{width:20px;height:20px;font-size:10.5px;}
 }
 .pname{font-weight:600;}
 .psub{font-size:11.5px;color:var(--text-dim);}
