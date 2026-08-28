@@ -79,6 +79,20 @@ export async function ensureFixtures(){
   }
 }
 
+// Every PL fixture for the whole season (past results + future kickoff
+// times), used by the full fixtures calendar. Separate from ensureFixtures()
+// above, which only asks FPL for *future* fixtures for the difficulty grid.
+export async function ensureAllFixtures(){
+  if(state.allFixtures) return state.allFixtures;
+  try{
+    state.allFixtures = await fetchJSONCached('https://fantasy.premierleague.com/api/fixtures/', 'aufside:cache:allfixtures', 15*60*1000);
+    return state.allFixtures;
+  }catch(e){
+    state.errors.allFixtures = 'Could not load the fixtures calendar (' + e.message + ').';
+    throw e;
+  }
+}
+
 export async function loadPicksForTeam(teamId){
   state.loadingPicks = true;
   state.errors.picks = null;
@@ -117,4 +131,3 @@ export async function ensurePlayerSummary(elementId){
   state.playerSummaryCache[elementId] = data;
   return data;
 }
-
