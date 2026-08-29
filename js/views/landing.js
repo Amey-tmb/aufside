@@ -12,14 +12,18 @@ let currentGw = null;
 export function LandingView(){
   return `
   <div class="landing">
-    <svg class="pitch-lines" viewBox="0 0 100 100" preserveAspectRatio="none">
-      <line x1="50" y1="0" x2="50" y2="100" stroke="var(--border)" stroke-width="0.15"/>
-      <circle cx="50" cy="50" r="12" fill="none" stroke="var(--border)" stroke-width="0.15"/>
-      <rect x="0" y="30" width="8" height="40" fill="none" stroke="var(--border)" stroke-width="0.15"/>
-      <rect x="92" y="30" width="8" height="40" fill="none" stroke="var(--border)" stroke-width="0.15"/>
-    </svg>
+    <div class="landing-hero" aria-hidden="true">
+      <div class="lh-sky"></div>
+      <div class="lh-cloud lh-cloud-1"></div>
+      <div class="lh-cloud lh-cloud-2"></div>
+      <div class="lh-hills-back"></div>
+      <div class="lh-floodlight lh-fl-1"><span class="lh-glow"></span></div>
+      <div class="lh-floodlight lh-fl-2"><span class="lh-glow"></span></div>
+      <div class="lh-hills-front"></div>
+    </div>
     <div class="landing-inner">
       <h1>Auf<span class="hl">side</span></h1>
+      <p class="landing-subtitle">Your evening at the ground, every gameweek.</p>
     </div>
   </div>
   <div class="home-section">
