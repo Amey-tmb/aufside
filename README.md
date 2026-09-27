@@ -93,7 +93,7 @@ vercel dev
 Only one is required, and only for two features:
 
 ```
-FOOTBALL_DATA_API_KEY=your_key_here
+FOOTBALL_DATA_API_KEY=d9713f3fb6a04232922ed8370a2fc7e8
 ```
 
 Get a free key at [football-data.org](https://www.football-data.org/client/register). It's used by **Live Scores & Table** and the **club Team pages**. Everything else (My Team, Transfer Recommendations, Player Explorer, Fixtures, etc.) works without it, since those pull directly from FPL's public API.
