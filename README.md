@@ -120,5 +120,4 @@ Get a free key at [football-data.org](https://www.football-data.org/client/regis
 <!-- This project is licensed under the MIT License — see LICENSE for details. -->
 
 ## Why I built this
-
-<!-- A sentence or two on your motivation — makes for a nice personal touch in a portfolio README. -->
+This started as a side project to get hands-on with building and shipping a real web app — from scratch, to a working PWA, to a full visual redesign — while building something I'd genuinely use myself every gameweek.
