@@ -103,7 +103,7 @@ Get a free key at [football-data.org](https://www.football-data.org/client/regis
 ## Screenshots
 
 <!-- Add screenshots here, e.g.: -->
-<!-- ![Homepage](./screenshots/home.png) -->
+ ![Homepage](./screenshots/home.png)
 <!-- ![My Team — pitch view](./screenshots/my-team-pitch.png) -->
 
 ## Roadmap / ideas
